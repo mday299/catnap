@@ -1,9 +1,6 @@
 #ifndef __CATNAP_H__
 #define __CATNAP_H__
 
-#include "RequestResponse.h"
-#include "HttpMethods.h"
-
 #include <nlohmann/json.hpp>
 
 #include <string>
@@ -13,7 +10,7 @@ namespace catnap {
 
 class Route;
 
-typedef Response (*endpoint_cb) (Request);
+typedef void * (*endpoint_cb) (void *);
 typedef void (*logger_cb) (const char *msg, ...);
 
 class CatNap {
@@ -24,7 +21,7 @@ class CatNap {
     public:
         void add_route(std::string route,
                        endpoint_cb cb,
-                       HttpMethods method = HttpMethods::GET);
+                       std::string method = "GET");
 
     private:
         int _socket;
@@ -33,12 +30,12 @@ class CatNap {
 
 class Route {
     public:
-        explicit Route(std::string route, HttpMethods method,
+        explicit Route(std::string route, std::string method,
                 endpoint_cb callback);
 
     private:
         std::string route;
-        HttpMethods method;
+        std::string method;
         endpoint_cb callback;
 };
 

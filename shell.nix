@@ -7,6 +7,7 @@ pkgs.mkShell {
     python3
     clang_11
     gmock
+    boost
   ];
   nativeBuildInputs = with pkgs; [
     man less

@@ -2,6 +2,12 @@
 
 #include "exceptions.h"
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
@@ -9,13 +15,6 @@
 #include <vector>
 
 namespace catnap {
-
-const std::map<HttpMethods, std::string> g_http_methods {
-    {HttpMethods::GET, "GET"},
-    {HttpMethods::PUT, "PUT"},
-    {HttpMethods::POST, "POST"},
-    {HttpMethods::DELETE, "DELETE"},
-};
 
 /*----------------------------------------------------------------------------*/
 
@@ -52,8 +51,17 @@ CatNap::~CatNap()
 
 void CatNap::add_route(std::string route,
                        endpoint_cb cb,
-                       HttpMethods method)
+                       std::string method)
 {
+}
+
+/*----------------------------------------------------------------------------*/
+
+void test(void)
+{
+    boost::asio::io_context ioc;
+    boost::asio::ip::tcp::socket sock{ioc};
+    boost::asio::ip::tcp::resolver resv{ioc};
 }
 
 } // namespace catnap

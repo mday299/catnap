@@ -22,6 +22,8 @@ find_package(nlohmann_json REQUIRED)
 # 		(premade runners GTest::gtest_main GMock::gmock_main)
 find_package(GTest REQUIRED)
 
+find_package(Boost REQUIRED)
+
 #===============================================================================
 
 file(GLOB_RECURSE SRCS ${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}/*.cpp)
@@ -32,15 +34,23 @@ file(GLOB_RECURSE EXE_SRCS ${CMAKE_SOURCE_DIR}/${EXE_NAME}/*.cpp)
 # Shareable library with the guts
 add_library(${PROJECT_NAME} ${SRCS})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra)
+target_compile_options(${PROJECT_NAME}
+	PUBLIC
+	-Wall -Wextra
+	$<$<CONFIG:Debug>:-D_DEBUG>
+)
 target_link_libraries(${PROJECT_NAME}
+	PRIVATE
+	Boost::headers
 	PUBLIC
 	nlohmann_json::nlohmann_json
 )
 target_include_directories(${PROJECT_NAME}
-	PUBLIC
+	PRIVATE
 	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}>
-	$<INSTALL_INTERFACE:include/lib${PROJECT_NAME}>
+	PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
 # Test executable using the library
@@ -50,6 +60,8 @@ target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra)
 target_link_libraries(${EXE_NAME}
 	PRIVATE
 	${PROJECT_NAME}
+	PUBLIC
+	pthread
 )
 target_include_directories(${EXE_NAME}
 	PRIVATE
@@ -74,6 +86,11 @@ foreach(test_src ${TESTS})
 		GTest::gtest
 		GTest::gtest_main
 		${PROJECT_NAME}
+	)
+	target_include_directories(${test_name}
+		PRIVATE
+		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}>
+		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/test>
 	)
 	# Change the output directory to group tests
 	set_target_properties(${test_name} PROPERTIES
