@@ -3,5 +3,5 @@
 
 TEST(testObjectCreation, blah)
 {
-    CatNap catnap;
+    catnap::CatNap catnap;
 }

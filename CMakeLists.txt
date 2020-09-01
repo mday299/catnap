@@ -8,14 +8,18 @@ set(EXE_NAME kitten)
 
 # Source: https://github.com/open-source-parsers/jsoncpp
 # Docs: https://open-source-parsers.github.io/jsoncpp-docs/doxygen/index.html
+# CMake Target: jsoncpp_lib
 #find_package(jsoncpp REQUIRED)
 
 # Source:
 # Docs:
+# CMake Target: nlohmann_json::nlohmann_json
 find_package(nlohmann_json REQUIRED)
 
 # Source:
 # Docs:
+# CMake Target: GTest::gtest GMock::gmock
+# 		(premade runners GTest::gtest_main GMock::gmock_main)
 find_package(GTest REQUIRED)
 
 #===============================================================================
@@ -31,10 +35,10 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra)
 target_link_libraries(${PROJECT_NAME}
 	PUBLIC
-	#jsoncpp_lib
 	nlohmann_json::nlohmann_json
 )
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME}
+	PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}>
 	$<INSTALL_INTERFACE:include/lib${PROJECT_NAME}>
 )
@@ -43,9 +47,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 add_executable(${EXE_NAME} ${EXE_SRCS})
 target_compile_features(${EXE_NAME} PRIVATE cxx_std_17)
 target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra)
-target_link_libraries(${EXE_NAME} PRIVATE
+target_link_libraries(${EXE_NAME}
+	PRIVATE
+	${PROJECT_NAME}
+)
+target_include_directories(${EXE_NAME}
+	PRIVATE
 	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/${EXE_NAME}>
 )
+
 #===============================================================================
 
 enable_testing()
@@ -65,6 +75,13 @@ foreach(test_src ${TESTS})
 		GTest::gtest_main
 		${PROJECT_NAME}
 	)
+	# Change the output directory to group tests
+	set_target_properties(${test_name} PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+	)
 	# Add it to the list for ctest to handle
-	add_test(NAME ${test_name} COMMAND ${test_name})
+	add_test(NAME ${test_name}
+		COMMAND ${test_name}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+	)
 endforeach(test_src)

@@ -1,3 +1,9 @@
+# Project Build Files
 build/
+compile_commands.json
+
+# Python
 .venv/
+
+# IDE Files
 .vim/

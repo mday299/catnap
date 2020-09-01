@@ -26,7 +26,7 @@ def _find_path(executable: str) -> Path:
             return exe
     raise FileNotFoundError(f'Unable to find {executable} in PATH')
 
-def _setup(this_dir, build_dir):
+def _setup(this_dir, build_dir, debug_mode = False):
     try:
         logging.info('Finding clang executable')
         ccomp = _find_path('clang')
@@ -41,8 +41,10 @@ def _setup(this_dir, build_dir):
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=yes',
         f'-DCMAKE_C_COMPILER={ccomp}',
         f'-DCMAKE_CXX_COMPILER={cxxcomp}',
-        str(this_dir),
     ]
+    if debug_mode:
+        cmd.append('-DCMAKE_BUILD_TYPE=Debug')
+    cmd.append(str(this_dir))
     logging.info('Running -> %s', ' '.join(cmd))
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
     return proc.returncode
@@ -66,7 +68,7 @@ def _build(build_dir):
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
     if proc.returncode != 0:
         return proc.returncode
-    cmd = ['ctest']
+    cmd = ['ctest', '-V']
     logging.info('Running -> %s', ' '.join(cmd))
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
     return proc.returncode
@@ -93,7 +95,7 @@ def _main():
         return _clean_build_dir(build_dir)
     elif args.setup:
         logging.info('Setting up build directory...')
-        return _setup(this_dir, build_dir)
+        return _setup(this_dir, build_dir, debug_mode=args.debug)
     elif args.run:
         logging.info('Running...')
         return _run(build_dir, 'kitten')
