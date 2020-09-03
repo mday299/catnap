@@ -33,7 +33,7 @@ file(GLOB_RECURSE EXE_SRCS ${CMAKE_SOURCE_DIR}/${EXE_NAME}/*.cpp)
 
 # Shareable library with the guts
 add_library(${PROJECT_NAME} ${SRCS})
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${PROJECT_NAME}
 	PUBLIC
 	-Wall -Wextra
