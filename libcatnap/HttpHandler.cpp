@@ -1,9 +1,11 @@
+#include "HttpHandler.h"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio.hpp>
 #include <boost/config.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
@@ -12,13 +14,19 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <stdexcept>
 
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 namespace asio = boost::asio;
 namespace beast = boost::beast;
 namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 
-// Return a reasonable mime type based on the extension of a file.
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+
+/*
+ * Return a reasonable mime type based on the extension of a file.
+ */
 static beast::string_view mime_type(beast::string_view path)
 {
     using beast::iequals;
@@ -54,8 +62,10 @@ static beast::string_view mime_type(beast::string_view path)
     return "application/text";
 }
 
-// Append an HTTP rel-path to a local filesystem path.
-// The returned path is normalized for the platform.
+/*
+ * Append an HTTP rel-path to a local filesystem path.
+ * The returned path is normalized for the platform.
+ */
 static std::string path_cat(beast::string_view base, beast::string_view path)
 {
     if(base.empty()) {
@@ -83,10 +93,12 @@ static std::string path_cat(beast::string_view base, beast::string_view path)
     return result;
 }
 
-// This function produces an HTTP response for the given
-// request. The type of the response object depends on the
-// contents of the request, so the interface requires the
-// caller to pass a generic lambda for receiving the response.
+/*
+ * This function produces an HTTP response for the given
+ * request. The type of the response object depends on the
+ * contents of the request, so the interface requires the
+ * caller to pass a generic lambda for receiving the response.
+ */
 template<class Body, class Allocator, class Send>
 static void handle_request(beast::string_view doc_root,
         http::request<Body, http::basic_fields<Allocator>>&& req,
@@ -199,7 +211,9 @@ static void fail(boost::system::error_code ec, char const* what)
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
-// Handles an HTTP server connection
+/*
+ * Handles an HTTP server connection
+ */
 template <typename T>
 class Session : public std::enable_shared_from_this<Session<T>>
 {
@@ -332,8 +346,8 @@ public:
     {
         // Send a TCP shutdown
         boost::system::error_code ec;
-        if constexpr(asio::is_class<tcp>::value) {
-            socket_.shutdown(tcp::socket::shutdown_send, ec);
+        if constexpr(asio::is_class<asio::ip::tcp>::value) {
+            socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
         }
 
         // At this point the connection is closed gracefully
@@ -342,7 +356,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-// Accepts incoming connections and launches the sessions
+/*
+ * Accepts incoming connections and launches the sessions.
+ */
 template <typename T>
 class Listener : public std::enable_shared_from_this<Listener<T>>
 {
@@ -350,6 +366,7 @@ class Listener : public std::enable_shared_from_this<Listener<T>>
     asio::basic_stream_socket<T> socket_;
     std::shared_ptr<std::string const> doc_root_;
 
+    // Ensure we pass the correct types, helps with debuging issues
     static_assert(
             asio::is_class<asio::ip::tcp>::value
             || asio::is_class<asio::local::stream_protocol>::value,
@@ -403,14 +420,18 @@ public:
 
 //------------------------------------------------------------------------------
 
-static bool setup_tcp_acceptor( asio::io_context &ioc,
-        asio::ip::address address, unsigned short port,
-        const std::shared_ptr<std::string> doc_root)
+/*
+ * Use the provided info and io context to create a new TCP acceptor and
+ * create a listener.
+ */
+bool setup_tcp_acceptor(asio::io_context &ioc,
+        const std::shared_ptr<std::string> doc_root,
+        asio::ip::address address, unsigned short port)
 {
     boost::system::error_code ec;
 
-    tcp::endpoint endpoint{address, port};
-    tcp::acceptor acceptor(ioc);
+    asio::ip::tcp::endpoint endpoint{address, port};
+    asio::ip::tcp::acceptor acceptor(ioc);
 
     // Open the acceptor
     acceptor.open(endpoint.protocol(), ec);
@@ -445,7 +466,7 @@ static bool setup_tcp_acceptor( asio::io_context &ioc,
         return false;
     }
 
-    std::make_shared<Listener<tcp>>(
+    std::make_shared<Listener<asio::ip::tcp>>(
         ioc,
         std::move(acceptor),
         doc_root)->run();
@@ -453,52 +474,61 @@ static bool setup_tcp_acceptor( asio::io_context &ioc,
     return true;
 }
 
-void test_space_1()
+/*
+ * Use the provided info and io context to create a new UNIX acceptor and
+ * create a listener.
+ */
+bool setup_unix_acceptor(asio::io_context &ioc,
+        const std::shared_ptr<std::string> doc_root,
+        std::string path, bool is_anonymous)
 {
-    asio::io_context ioc{1};
-    asio::ip::tcp::socket sock(ioc);
-}
+    boost::system::error_code ec;
 
-void test_space_2()
-{
-    asio::io_context ioc{1};
-    asio::basic_stream_socket<asio::local::stream_protocol> sock(ioc);
-}
+    if (is_anonymous) {
+        throw std::invalid_argument("Anonymous Unix Sockets not yet supported");
+    }
 
-int main(int argc, char* argv[])
-{
-    // Check command line arguments.
-    if (argc != 5)
+    asio::local::stream_protocol::endpoint endpoint(path);
+    asio::local::stream_protocol::acceptor acceptor(ioc);
+
+    // Open the acceptor
+    acceptor.open(endpoint.protocol(), ec);
+    if(ec)
     {
-        std::cerr <<
-            "Usage: http-server-async <address> <port> <doc_root> <threads>\n" <<
-            "Example:\n" <<
-            "    http-server-async 0.0.0.0 8080 . 1\n";
-        return EXIT_FAILURE;
-    }
-    auto const address = asio::ip::make_address(argv[1]);
-    auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
-    auto const doc_root = std::make_shared<std::string>(argv[3]);
-    auto const threads = std::max<int>(1, std::atoi(argv[4]));
-
-    // The io_context is required for all I/O
-    asio::io_context ioc{threads};
-
-    // Create and launch a listening port
-    if (!setup_tcp_acceptor(ioc, address, port, doc_root)) {
-        return 1;
+        fail(ec, "open");
+        return false;
     }
 
-    // Run the I/O service on the requested number of threads
-    std::vector<std::thread> v;
-    v.reserve(threads - 1);
-    for(auto i = threads - 1; i > 0; --i)
-        v.emplace_back(
-        [&ioc]
-        {
-            ioc.run();
-        });
-    ioc.run();
+    // Allow address reuse
+    acceptor.set_option(asio::socket_base::reuse_address(true), ec);
+    if(ec)
+    {
+        fail(ec, "set_option");
+        return false;
+    }
 
-    return EXIT_SUCCESS;
+    // Bind to the server address
+    acceptor.bind(endpoint, ec);
+    if(ec)
+    {
+        fail(ec, "bind");
+        return false;
+    }
+
+    // Start listening for connections
+    acceptor.listen(
+        asio::socket_base::max_listen_connections, ec);
+    if(ec)
+    {
+        fail(ec, "listen");
+        return false;
+    }
+
+    std::make_shared<Listener<asio::local::stream_protocol>>(
+        ioc,
+        std::move(acceptor),
+        doc_root)->run();
+
+    return true;
 }
+
