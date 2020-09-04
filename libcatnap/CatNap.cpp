@@ -2,57 +2,155 @@
 
 #include "exceptions.h"
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast.hpp>
+#include <boost/asio.hpp>
 
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
 #include <cerrno>
 #include <vector>
+#include <thread>
+
+namespace asio = boost::asio;
+namespace beast = boost::beast;
+namespace http = boost::beast::http;
 
 namespace catnap {
 
-/*----------------------------------------------------------------------------*/
+class CatNap_Private : public std::thread {
+    public:
+        CatNap_Private() {}
+        ~CatNap_Private() {}
 
-static int _create_default_socket()
+    public:
+        void add_socket(void)
+        {
+        }
+
+    private:
+        boost::asio::io_context _ioc;
+};
+
+struct ListenThreads {
+    std::thread thread;
+    bool stop = false;
+};
+std::vector<ListenThreads> g_lthreads;
+
+template <typename SockType>
+void handle_socket(SockType sock, CatNap *cn)
 {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        throw CatnapStreamError("Unable to create socket file descriptor",
-                                errno);
+    static_assert(
+            asio::is_class<asio::ip::tcp>::value
+            || asio::is_class<asio::local::stream_protocol>::value,
+            "Expecting local stream or IP TCP type");
+
+    http::request<http::string_body> req;
+    beast::flat_buffer buffer;
+    http::read(sock, buffer, req);
+}
+
+static asio::io_context ioc;
+
+static void listen_thread(CatNap *cn_obj, CatNap::Listen *listen_def, bool *stop)
+{
+    if(listen_def->isUnix) {
+        asio::local::stream_protocol::endpoint ep(listen_def->addr);
+        asio::local::stream_protocol::acceptor acc(ioc, ep);
+        while (true) {
+            asio::local::stream_protocol::socket sock(ioc);
+            acc.accept(sock);
+
+            handle_socket(std::move(sock), cn_obj);
+        }
     }
-    return sock;
+    else {
+        asio::ip::tcp::endpoint ep(asio::ip::tcp::v4(), listen_def->port);
+        asio::ip::tcp::acceptor acc{ioc, ep};
+        while (true) {
+            asio::ip::tcp::socket sock{ioc};
+            acc.accept(sock);
+
+            handle_socket(std::move(sock), cn_obj);
+        }
+    }
 }
 
 /*----------------------------------------------------------------------------*/
+/*
+ * https://www.boost.org/doc/libs/1_69_0/libs/beast/example/http/server/async/http_server_async.cpp
+ */
+/*----------------------------------------------------------------------------*/
 
-CatNap::CatNap(int socket)
+CatNap::CatNap()
 {
-    if (socket == 0) {
-        this->_socket = _create_default_socket();
-    }
-    else if (socket > 0) {
-        this->_socket = socket;
-    }
+    this->_private = new CatNap_Private();
 }
 
 CatNap::~CatNap()
 {
-    if (this->_socket > 0) {
-        close(this->_socket);
-    }
+    delete (CatNap_Private *)this->_private;
 }
 
 /*----------------------------------------------------------------------------*/
 
+/**
+ * Add an accepted route to listen for.
+ *
+ * @param [in] route    Endpoint route.
+ * @param [in] cb       Callback function to trigger.
+ * @param [in] method   HTTP method type.
+ */
 void CatNap::add_route(std::string route,
                        endpoint_cb cb,
                        std::string method)
 {
+    // TODO
+}
+
+/**
+ * Create a TCP socket to listen on.
+ *
+ * @param [in] host     The interface to listen on.
+ * @param [in] port     The port number to use.
+ */
+void CatNap::add_tcp_listen(std::string host, int port)
+{
+    // TODO
+}
+
+/**
+ * Create a UNIX socket to listen on.
+ *
+ * @param [in] path         The path/name of the unix socket.
+ * @param [in] anonymous    Make the socket name anonymous (_ie no sock file_).
+ */
+void CatNap::add_unix_listen(std::string path, bool anonymous)
+{
+    // TODO
+    boost::asio::ip::tcp::socket sock();
+}
+
+/**
+ * Start the server.
+ *
+ * @param [in] mode     Run the server in blocking mode or threaded mode.
+ */
+void CatNap::run(CatNap::Mode mode)
+{
+    //TODO
+}
+
+/**
+ * Return the status code of the exited process, could be used as output of the
+ * application.
+ *
+ * @returns Integer status code similar to the value output by programs.
+ */
+int CatNap::get_status_code()
+{
+    // TODO
 }
 
 /*----------------------------------------------------------------------------*/

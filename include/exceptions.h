@@ -46,6 +46,22 @@ class CatnapStreamError : public CatnapError
         virtual ~CatnapStreamError() {}
 };
 
+class CatnapSocketError : public CatnapError
+{
+    public:
+        CatnapSocketError()
+            : CatnapError("") {}
+        CatnapSocketError(std::string msg)
+            : CatnapError(msg) {}
+        CatnapSocketError(std::string msg, int err_no)
+            : CatnapError(msg, err_no) {}
+        CatnapSocketError(const char *msg)
+            : CatnapError(msg) {}
+        CatnapSocketError(const char *msg, int err_no)
+            : CatnapError(msg, err_no) {}
+        virtual ~CatnapSocketError() {}
+};
+
 class DataIsNotJson : public CatnapError
 {
     public:

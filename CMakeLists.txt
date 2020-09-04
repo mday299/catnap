@@ -29,6 +29,8 @@ find_package(Boost REQUIRED)
 file(GLOB_RECURSE SRCS ${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}/*.cpp)
 file(GLOB_RECURSE EXE_SRCS ${CMAKE_SOURCE_DIR}/${EXE_NAME}/*.cpp)
 
+list(REMOVE_ITEM SRCS ${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}/HttpHandler.cpp)
+
 #===============================================================================
 
 # Shareable library with the guts
@@ -55,7 +57,7 @@ target_include_directories(${PROJECT_NAME}
 
 # Test executable using the library
 add_executable(${EXE_NAME} ${EXE_SRCS})
-target_compile_features(${EXE_NAME} PRIVATE cxx_std_17)
+target_compile_features(${EXE_NAME} PRIVATE cxx_std_20)
 target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra)
 target_link_libraries(${EXE_NAME}
 	PRIVATE
@@ -66,6 +68,21 @@ target_link_libraries(${EXE_NAME}
 target_include_directories(${EXE_NAME}
 	PRIVATE
 	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/${EXE_NAME}>
+)
+
+# Test executable using the library
+add_executable(http_test_setup ${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}/HttpHandler.cpp)
+target_compile_features(http_test_setup PRIVATE cxx_std_20 cxx_constexpr)
+target_compile_options(http_test_setup PRIVATE -Wall -Wextra)
+target_link_libraries(http_test_setup
+	PRIVATE
+	Boost::headers
+	PUBLIC
+	pthread
+)
+target_include_directories(http_test_setup
+	PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}>
 )
 
 #===============================================================================

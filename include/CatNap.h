@@ -5,6 +5,7 @@
 
 #include <string>
 #include <map>
+#include <thread>
 
 namespace catnap {
 
@@ -13,9 +14,20 @@ class Route;
 typedef void * (*endpoint_cb) (void *);
 typedef void (*logger_cb) (const char *msg, ...);
 
+
 class CatNap {
     public:
-        CatNap(int socket = 0);
+        enum class Mode { Blocking, Threaded };
+        class Listen {
+            public:
+                std::string addr;       // Address/path to listen on
+                int port;               // Port to use for TCP connections
+                bool isUnix = false;    // If true, addr is interpreted as path
+                bool isAnon = false;    // If unix, is it anonymous?
+        };
+
+    public:
+        CatNap();
         virtual ~CatNap();
 
     public:
@@ -23,9 +35,17 @@ class CatNap {
                        endpoint_cb cb,
                        std::string method = "GET");
 
+        void run(Mode mode = Mode::Blocking);
+        int get_status_code();
+
+        void add_tcp_listen(std::string host, int port);
+        void add_unix_listen(std::string path, bool anonymous = false);
+
     private:
-        int _socket;
+        void *_private = nullptr;
         std::map<std::string, Route> routes;
+        int status_code = 0;
+        std::thread _listen_thr;
 };
 
 class Route {
