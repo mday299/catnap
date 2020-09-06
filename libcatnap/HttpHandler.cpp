@@ -144,6 +144,7 @@ static void handle_request(beast::string_view doc_root,
     };
 
     // Make sure we can handle the method
+    // TODO Modify this to allow more methods
     if( req.method() != http::verb::get &&
         req.method() != http::verb::head) {
         return send(bad_request("Unknown HTTP-method"));
@@ -155,6 +156,8 @@ static void handle_request(beast::string_view doc_root,
         req.target().find("..") != beast::string_view::npos) {
         return send(bad_request("Illegal request-target"));
     }
+
+    // TODO BEGIN Replace with callback call
 
     // Build the path to the requested file
     std::string path = path_cat(doc_root, req.target());
@@ -201,6 +204,8 @@ static void handle_request(beast::string_view doc_root,
     res.content_length(size);
     res.keep_alive(req.keep_alive());
     return send(std::move(res));
+
+    // TODO END Replace with callback call
 }
 
 //------------------------------------------------------------------------------

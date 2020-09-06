@@ -42,8 +42,10 @@ def _setup(this_dir: Path, build_dir: Path, args):
         f'-DCMAKE_C_COMPILER={ccomp}',
         f'-DCMAKE_CXX_COMPILER={cxxcomp}',
     ]
-    if args.debug:
-        cmd.append('-DCMAKE_BUILD_TYPE=Debug')
+    b_type = 'Release' if args.release else 'Debug'
+    cmd.append(f'-DCMAKE_BUILD_TYPE={b_type}')
+    if args.coverage:
+        cmd.append('-DENABLE_CODE_COVERAGE=ON')
     cmd.append(str(this_dir))
     logging.info('Running -> %s', ' '.join(cmd))
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
@@ -51,6 +53,8 @@ def _setup(this_dir: Path, build_dir: Path, args):
 
 def _build(this_dir: Path, build_dir: Path, args):
     if not Path(build_dir, 'CMakeCache.txt').exists():
+        setattr(args, 'release', False)
+        setattr(args, 'coverage', False)
         _setup(this_dir, build_dir, args)
     cmd = [
         'cmake',
@@ -82,6 +86,8 @@ def _main():
     subparser = parser.add_subparsers()
     # Setup
     parser_setup = subparser.add_parser('setup')
+    parser_setup.add_argument('--release', action='store_true')
+    parser_setup.add_argument('--coverage', action='store_true')
     parser_setup.set_defaults(func=_setup)
     # Clean
     parser_clean = subparser.add_parser('clean')

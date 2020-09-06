@@ -1,6 +1,7 @@
 #include "CatNap.h"
 
 #include "exceptions.h"
+#include "HttpHandler.h"
 
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
@@ -140,6 +141,14 @@ void CatNap::add_unix_listen(std::string path, bool anonymous)
 void CatNap::run(CatNap::Mode mode)
 {
     //TODO
+    boost::asio::io_context ioc;
+    std::shared_ptr<std::string> docs_root = std::make_shared<std::string>(".");
+    setup_tcp_acceptor(
+            ioc,
+            docs_root,
+            boost::asio::ip::address().from_string("127.0.0.1"),
+            5000
+            );
 }
 
 /**
