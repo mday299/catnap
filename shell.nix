@@ -5,6 +5,9 @@ let
     jedi
     pylint
   ]);
+  ubuntu_boost = pkgs.boost167;
+  arch_boost = pkgs.boost172;
+  other_boost = pkgs.boost171;
 in
 pkgs.mkShell {
   buildInputs = with pkgs; [
@@ -13,7 +16,7 @@ pkgs.mkShell {
     clang_11 # For the compiler
     llvm_11 # For llvm-profdata and llvm-cov
     gmock # Testing framework
-    boost # HTML and socket handling
+    ubuntu_boost # HTML and socket handling
   ];
   nativeBuildInputs = with pkgs; [
     man less

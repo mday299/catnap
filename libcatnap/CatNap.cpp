@@ -3,8 +3,8 @@
 #include "exceptions.h"
 #include "HttpHandler.h"
 
-#include <boost/beast.hpp>
-#include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -14,19 +14,25 @@
 #include <thread>
 
 namespace asio = boost::asio;
-namespace beast = boost::beast;
-namespace http = boost::beast::http;
 
 namespace catnap {
 
 class CatNap_Private : public std::thread {
     public:
-        CatNap_Private() {}
+        CatNap_Private(int num_threads = 1)
+            : _ioc{num_threads}
+        {
+        }
         ~CatNap_Private() {}
 
     public:
         void add_socket(void)
         {
+        }
+
+        boost::asio::io_context & ioc()
+        {
+            return this->_ioc;
         }
 
     private:
@@ -39,43 +45,10 @@ struct ListenThreads {
 };
 std::vector<ListenThreads> g_lthreads;
 
-template <typename SockType>
-void handle_socket(SockType sock, CatNap *cn)
-{
-    static_assert(
-            asio::is_class<asio::ip::tcp>::value
-            || asio::is_class<asio::local::stream_protocol>::value,
-            "Expecting local stream or IP TCP type");
-
-    http::request<http::string_body> req;
-    beast::flat_buffer buffer;
-    http::read(sock, buffer, req);
-}
-
 static asio::io_context ioc;
 
 static void listen_thread(CatNap *cn_obj, CatNap::Listen *listen_def, bool *stop)
 {
-    if(listen_def->isUnix) {
-        asio::local::stream_protocol::endpoint ep(listen_def->addr);
-        asio::local::stream_protocol::acceptor acc(ioc, ep);
-        while (true) {
-            asio::local::stream_protocol::socket sock(ioc);
-            acc.accept(sock);
-
-            handle_socket(std::move(sock), cn_obj);
-        }
-    }
-    else {
-        asio::ip::tcp::endpoint ep(asio::ip::tcp::v4(), listen_def->port);
-        asio::ip::tcp::acceptor acc{ioc, ep};
-        while (true) {
-            asio::ip::tcp::socket sock{ioc};
-            acc.accept(sock);
-
-            handle_socket(std::move(sock), cn_obj);
-        }
-    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -118,7 +91,16 @@ void CatNap::add_route(std::string route,
  */
 void CatNap::add_tcp_listen(std::string host, int port)
 {
-    // TODO
+    auto addr = boost::asio::ip::make_address(host);
+    bool success = setup_tcp_acceptor(
+        ((CatNap_Private *)this->_private)->ioc(),
+        std::make_shared<std::string>("."),
+        addr,
+        port);
+    if (!success) {
+        // TODO replace with try catch?
+        throw std::runtime_error("Failed to setup unix socket");
+    }
 }
 
 /**
@@ -129,8 +111,15 @@ void CatNap::add_tcp_listen(std::string host, int port)
  */
 void CatNap::add_unix_listen(std::string path, bool anonymous)
 {
-    // TODO
-    boost::asio::ip::tcp::socket sock();
+    bool success = setup_unix_acceptor(
+        ((CatNap_Private *)this->_private)->ioc(),
+        std::make_shared<std::string>("."),
+        path,
+        anonymous);
+    if (!success) {
+        // TODO replace with try catch?
+        throw std::runtime_error("Failed to setup unix socket");
+    }
 }
 
 /**
@@ -141,14 +130,7 @@ void CatNap::add_unix_listen(std::string path, bool anonymous)
 void CatNap::run(CatNap::Mode mode)
 {
     //TODO
-    boost::asio::io_context ioc;
-    std::shared_ptr<std::string> docs_root = std::make_shared<std::string>(".");
-    setup_tcp_acceptor(
-            ioc,
-            docs_root,
-            boost::asio::ip::address().from_string("127.0.0.1"),
-            5000
-            );
+    this->add_tcp_listen("127.0.0.1", 5000);
 }
 
 /**
@@ -164,11 +146,5 @@ int CatNap::get_status_code()
 
 /*----------------------------------------------------------------------------*/
 
-void test(void)
-{
-    boost::asio::io_context ioc;
-    boost::asio::ip::tcp::socket sock{ioc};
-    boost::asio::ip::tcp::resolver resv{ioc};
-}
 
 } // namespace catnap

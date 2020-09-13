@@ -53,7 +53,11 @@ find_package(nlohmann_json REQUIRED)
 #       (premade runners GTest::gtest_main GMock::gmock_main)
 find_package(GTest REQUIRED)
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED system)
+set(BOOSTLIBS
+    Boost::headers
+    Boost::system
+)
 
 #===============================================================================
 
@@ -77,7 +81,7 @@ target_link_options(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-    Boost::headers
+    ${BOOSTLIBS}
     PUBLIC
     nlohmann_json::nlohmann_json
 )

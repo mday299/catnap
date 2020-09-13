@@ -7,3 +7,4 @@ compile_commands.json
 
 # IDE Files
 .vim/
+*.swp
