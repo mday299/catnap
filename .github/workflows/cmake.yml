@@ -49,7 +49,7 @@ jobs:
         cache-name: conan-pkgs
       with:
         path: ~/.conan
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles("$GITHUB_WORKSPACE/conanfile.txt") }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('$GITHUB_WORKSPACE/conanfile.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
