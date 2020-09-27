@@ -91,6 +91,8 @@ def _build(this_dir: Path, build_dir: Path, args):
         'cmake',
         '--build', str(build_dir),
     ]
+    if args.verbose:
+        cmd.append('--verbose')
     logging.info('Running -> %s', ' '.join(cmd))
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
     if proc.returncode != 0 or args.notest:
@@ -128,6 +130,7 @@ def _main():
     # Build
     parser_build = subparser.add_parser('build')
     parser_build.add_argument('--notest', action='store_true')
+    parser_build.add_argument('--verbose', '-v', action='store_true')
     parser_build.set_defaults(func=_build)
     # Run
     parser_run = subparser.add_parser('run')

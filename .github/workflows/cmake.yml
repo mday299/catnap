@@ -17,20 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Check programs
-      shell: bash
-      run: |
-        function check() {
-          local res=$( (which $1 2> /dev/null) || "Absent")
-          echo "$1: $res"
-        }
-        check clang++
-        check llvm-profdata
-        check llvm-cov
-        check lcov
-        check gcov
-        dpkg -l
-
     - name: Setup python environment
       uses: actions/setup-python@v2
       env:
@@ -49,7 +35,7 @@ jobs:
         cache-name: conan-pkgs
       with:
         path: ~/.conan
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('$GITHUB_WORKSPACE/conanfile.txt') }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/conanfile.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
@@ -75,7 +61,8 @@ jobs:
         python $GITHUB_WORKSPACE/make.py \
             --build-dir ${{runner.workspace}}/build \
             build \
-            --notest
+            --notest \
+            --verbose
 
     - name: Generate coverage data
       working-directory: ${{runner.workspace}}/build
