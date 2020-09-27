@@ -11,6 +11,17 @@ set(EXE_NAME kitten)
 
 #===============================================================================
 
+if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang"
+        OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+    message(STATUS "Using a Clang compiler")
+    set(IS_CLANG TRUE)
+    set(IS_GNU FALSE)
+else()
+    message(STATUS "Using a GNU compiler")
+    set(IS_CLANG FALSE)
+    set(IS_GNU TRUE)
+endif()
+
 # Compiler features used by the project
 # Not enforced on users of the shared lib
 set(PROJ_FEAT
@@ -24,10 +35,13 @@ set(PROJ_OPTS
     $<$<CONFIG:Debug>:-D_DEBUG>
 )
 set(CODE_COV
-    -fprofile-instr-generate
-    -fcoverage-mapping
-    -fsanitize=address
-    -fsanitize-coverage=trace-pc-guard
+    $<$<BOOL:${IS_CLANG}>:-fprofile-instr-generate>
+    $<$<BOOL:${IS_CLANG}>:-fcoverage-mapping>
+    $<$<BOOL:${IS_CLANG}>:-fsanitize=address>
+    $<$<BOOL:${IS_CLANG}>:-fsanitize-coverage=trace-pc-guard>
+    $<$<BOOL:${IS_GNU}>:--coverage>
+    $<$<BOOL:${IS_GNU}>:-fprofile-arcs>
+    $<$<BOOL:${IS_GNU}>:-ftest-coverage>
 )
 set(CODE_COV_SRC_DIRS
     ${CMAKE_SOURCE_DIR}/lib${PROJECT_NAME}
@@ -124,6 +138,8 @@ enable_testing()
 file(GLOB_RECURSE TESTS ${CMAKE_SOURCE_DIR}/test/*.cpp)
 set(TESTS_DIR "${CMAKE_BINARY_DIR}/tests")
 set(PROFRAW_DIR "${CMAKE_BINARY_DIR}/profraw")
+set(PROFDATA_DIR "${CMAKE_BINARY_DIR}")
+set(COVERAGE_OUT "${CMAKE_BINARY_DIR}/html")
 
 foreach(test_src ${TESTS})
     # Get the name without extension or directory
@@ -148,6 +164,7 @@ foreach(test_src ${TESTS})
     target_link_libraries(${test_name}
         GTest::gtest
         GTest::gtest_main
+        ${BOOSTLIBS}
         ${PROJECT_NAME}
     )
     target_include_directories(${test_name}
@@ -165,8 +182,16 @@ foreach(test_src ${TESTS})
         COMMAND ${test_name}
         WORKING_DIRECTORY ${TESTS_DIR}
     )
+endforeach(test_src)
+
+#
+# Code Coverage
+#
+
+if(${ENABLE_CODE_COVERAGE} AND ${IS_CLANG})
     # Generate a profraw file target to be used along with the coverage target.
-    if(${ENABLE_CODE_COVERAGE})
+    foreach(test_src ${TESTS})
+        get_filename_component(test_name ${test_src} NAME_WLE)
         message(STATUS "Creating target: ${test_name}.profraw")
         list(APPEND PROFRAW_FILES "${PROFRAW_DIR}/${test_name}.profraw")
         list(APPEND PROFRAW_TAR "${test_name}.profraw")
@@ -179,26 +204,35 @@ foreach(test_src ${TESTS})
             BYPRODUCTS ${PROFRAW_DIR}/${test_name}.profraw
             #WORKING_DIRECTORY ${TESTS_DIR}/profraw
         )
-    endif(${ENABLE_CODE_COVERAGE})
-endforeach(test_src)
+    endforeach(test_src)
 
-#
-# Code Coverage
-#
-
-if(${ENABLE_CODE_COVERAGE})
-    message(STATUS "Creating target: coverage")
-    add_custom_target(coverage
-        COMMAND
-            ${CMAKE_SOURCE_DIR}/tools/coverage/generate_coverage_report.py
-            --tests ${TEST_EXES}
-            --profraw ${PROFRAW_FILES}
-            --style ${CMAKE_SOURCE_DIR}/save/style/style.css
-        BYPRODUCTS html
+    add_custom_target(coverage-data
+        COMMAND ;
         DEPENDS "${PROFRAW_TAR}"
         DEPENDS "${TEST_EXES}"
     )
-endif(${ENABLE_CODE_COVERAGE})
+
+    add_custom_target(default.profdata
+        COMMAND llvm-profdata merge -sparse -o ${PROFDATA_DIR}/default.profdata
+            ${PROFRAW_FILES}
+        DEPENDS "${PROFRAW_TAR}"
+        DEPENDS "${TEST_EXES}"
+    )
+
+    message(STATUS "Creating target: coverage")
+    add_custom_target(coverage
+        COMMAND
+            llvm-cov report ${TEST_EXES}
+                -instr-profile=${PROFDATA_DIR}/default.profdata
+        COMMAND
+            llvm-cov show  ${TEST_EXES}
+                -format=html
+                -output-dir=${COVERAGE_OUT}
+                -instr-profile=${PROFDATA_DIR}/default.profdata
+        BYPRODUCTS html
+        DEPENDS "default.profdata"
+    )
+endif(${ENABLE_CODE_COVERAGE} AND ${IS_CLANG})
 
 # Keep at bottom
 # vim: set expandtab sw=4 ts=4:
