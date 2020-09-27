@@ -74,7 +74,8 @@ jobs:
       run: |
         python $GITHUB_WORKSPACE/make.py \
             --build-dir ${{runner.workspace}}/build \
-            build
+            build \
+            --notest
 
     - name: Generate coverage data
       working-directory: ${{runner.workspace}}/build
@@ -101,17 +102,17 @@ jobs:
     - name: Generate Profdata File
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: llvm-profdata merge -sparse -o default.profdata profraw/*.profraw
+      run: llvm-profdata-9 merge -sparse -o default.profdata profraw/*.profraw
 
     - name: Show results of coverage report
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: llvm-cov report -instr-profile=default.profdata tests/*
+      run: llvm-cov-9 report -instr-profile=default.profdata tests/*
 
     - name: Generate coverage as html
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: llvm-cov show -format=html -output-dir=html -instr-profile=default.profdata tests/*
+      run: llvm-cov-9 show -format=html -output-dir=html -instr-profile=default.profdata tests/*
 
     - name: Save report
       uses: actions/upload-artifact@v2

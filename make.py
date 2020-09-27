@@ -93,7 +93,7 @@ def _build(this_dir: Path, build_dir: Path, args):
     ]
     logging.info('Running -> %s', ' '.join(cmd))
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
-    if proc.returncode != 0:
+    if proc.returncode != 0 or args.notest:
         return proc.returncode
     cmd = ['ctest', '-V']
     logging.info('Running -> %s', ' '.join(cmd))
@@ -127,6 +127,7 @@ def _main():
     parser_clean.set_defaults(func=_clean)
     # Build
     parser_build = subparser.add_parser('build')
+    parser_build.add_argument('--notest', action='store_true')
     parser_build.set_defaults(func=_build)
     # Run
     parser_run = subparser.add_parser('run')
