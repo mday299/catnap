@@ -114,6 +114,7 @@ def _run(this_dir: Path, build_dir: Path, args):
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--build-dir', type=str)
     subparser = parser.add_subparsers()
     # Setup
     parser_setup = subparser.add_parser('setup')
@@ -138,7 +139,7 @@ def _main():
         )
 
     this_dir = Path(__file__).parent.resolve()
-    build_dir = Path(this_dir, 'build')
+    build_dir = Path(args.build_dir).resolve() if args.build_dir else Path(this_dir, 'build')
     os.makedirs(build_dir, exist_ok=True)
 
     if hasattr(args, 'func'):

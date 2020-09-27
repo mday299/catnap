@@ -20,11 +20,16 @@ jobs:
     - name: Check programs
       shell: bash
       run: |
-        (which clang++ > /dev/null 2>&1) && echo "clang++ Yes" || echo "clang++ No"
-        (which llvm-profdata > /dev/null 2>&1) && echo "llvm-profdata Yes" || echo "llvm-profdata No"
-        (which llvm-cov > /dev/null 2>&1) && echo "llvm-cov Yes" || echo "llvm-cov No"
-        (which lcov > /dev/null 2>&1) && echo "lcov Yes" || echo "lcov No"
-        (which gcov > /dev/null 2>&1) && echo "gcov Yes" || echo "gcov No"
+        function check() {
+          local res=$( (which $1 2> /dev/null) || "Absent")
+          echo "$1: $res"
+        }
+        check clang++
+        check llvm-profdata
+        check llvm-cov
+        check lcov
+        check gcov
+        dpkg -l
 
     - name: Setup python environment
       uses: actions/setup-python@v2
@@ -44,7 +49,7 @@ jobs:
         cache-name: conan-pkgs
       with:
         path: ~/.conan
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/conanfile.txt') }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles("$GITHUB_WORKSPACE/conanfile.txt") }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
@@ -53,28 +58,23 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
-    - name: Install C/C++ Dependencies
-      working-directory: ${{runner.workspace}}/build
-      #shell: bash
-      run: |
-        conan install $GITHUB_WORKSPACE
-        cp $GITHUB_WORKSPACE/cmake/Find*.cmake ./
-
     - name: Setup project with cmake
       working-directory: ${{runner.workspace}}/build
       #shell: bash
       run: |
-        cmake $GITHUB_WORKSPACE \
-            -DCMAKE_TOOLCHAIN_FILE=conan_paths.cmake \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-            -DENABLE_CODE_COVERAGE=ON
+        python $GITHUB_WORKSPACE/make.py \
+            --build-dir ${{runner.workspace}}/build \
+            setup \
+            --coverage \
+            --clang
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE --verbose
+      run: |
+        python $GITHUB_WORKSPACE/make.py \
+            --build-dir ${{runner.workspace}}/build \
+            build
 
     - name: Generate coverage data
       working-directory: ${{runner.workspace}}/build
