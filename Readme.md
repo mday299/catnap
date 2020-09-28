@@ -26,7 +26,7 @@ Third Party Libraries handled by Conan.
 | Dependency               | Version | Mode             |
 |--------------------------|---------|------------------|
 | [Boost][] (Beast & ASIO) | 1.69.0  | Static           |
-| nlohmann_json_           |         | Shared or Static |
+| [nlohmann_json][]        |         | Shared or Static |
 
 Building
 --------
