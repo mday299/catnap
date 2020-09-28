@@ -12,6 +12,7 @@ pkgs.mkShell {
     clang_11 # For the compiler
     llvm_11 # For llvm-profdata and llvm-cov
     conan # C++ package manager
+    doxygen
   ];
   nativeBuildInputs = with pkgs; [
     man less
