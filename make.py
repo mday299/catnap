@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
-import subprocess
 import argparse
-import os
-import sys
-import logging
 import enum
 import glob
+import logging
+import os
+import re
+import subprocess
+import sys
 from pathlib import Path
+
 
 class Color(enum.Enum):
     RED = '\033[1;31m'
@@ -113,6 +115,26 @@ def _run(this_dir: Path, build_dir: Path, args):
     proc = subprocess.run(cmd, cwd=build_dir, env=os.environ, check=False)
     return proc.returncode
 
+def _docs(this_dir: Path, build_dir: Path, args):
+    def _color_warn_and_err(this_line: str) -> str:
+        res = err_pat.search(line)
+        if res:
+            return err_pat.sub(_colorize(res.group(1), Color.RED), line)
+        res = warn_pat.search(line)
+        if res:
+            return warn_pat.sub(_colorize(res.group(1), Color.YELLOW), line)
+        return line
+    proc = subprocess.Popen('doxygen'.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    warn_pat = re.compile(r'(warning:)', re.IGNORECASE)
+    err_pat = re.compile(r'(error:)', re.IGNORECASE)
+    while True:
+        line = proc.stdout.readline()
+        if not line:
+            break
+        line = line.rstrip().decode()
+        print(_color_warn_and_err(line))
+    return proc.returncode
+
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--debug', action='store_true')
@@ -135,6 +157,9 @@ def _main():
     # Run
     parser_run = subparser.add_parser('run')
     parser_run.set_defaults(func=_run)
+    # Docs
+    parser_docs = subparser.add_parser('docs')
+    parser_docs.set_defaults(func=_docs)
     args = parser.parse_args()
 
     logging.basicConfig(

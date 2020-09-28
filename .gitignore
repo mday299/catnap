@@ -1,6 +1,7 @@
 # Project Build Files
 build/
 compile_commands.json
+doxy/
 
 # Python
 .venv/
