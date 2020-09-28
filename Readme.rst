@@ -12,11 +12,13 @@ specifically compiled for these to be shared.
 
 .. _nlohmann_json: https://github.com/nlohmann/json
 .. _Boost: https://www.boost.org/
+.. _CMake: https://cmake.org/
 
 Dependencies
 ------------
 
 - C++ Compiler (*gcc or clang*)
+- CMake_
 - Conan (*avaliable via pip*)
 
 Third Party Libraries handled by Conan.
