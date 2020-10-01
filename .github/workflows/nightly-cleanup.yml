@@ -3,7 +3,6 @@ on:
   schedule:
     # min hour dom mon dow
     - cron: '0 1 * * *' # Every 1 am
-  push:
 
 jobs:
   delete-artifacts:
