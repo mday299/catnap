@@ -94,6 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    # Checkout required for referencing source files
+    - uses: actions/checkout@v2
 
     # Download artifacts from the build stage
     - name: Save artifacts
