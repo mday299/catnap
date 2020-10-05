@@ -75,7 +75,7 @@ jobs:
     #   Using the tar container preserves permissions across jobs
     - name: Archive test artifacts into tar container
       working-directory: ${{runner.workspace}}
-      run: tar -cvf test-artifacts.tar build/tests/*_test
+      run: tar -cvf ${{runner.workspace}}/test-artifacts.tar build/tests/*_test
     - name: Save test artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -83,7 +83,7 @@ jobs:
         path: ${{runner.workspace}}/test-artifacts.tar
     - name: Archive coverage artifacts into tar container
       working-directory: ${{runner.workspace}}
-      run: tar -cvf coverage-artifacts.tar build/profraw/*.profraw
+      run: tar -cvf ${{runner.workspace}}/coverage-artifacts.tar build/profraw/*.profraw
     - name: Save coverage data
       uses: actions/upload-artifact@v2
       with:
@@ -100,12 +100,12 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: coverage-artifacts
-        path: ${{runner.workspace}}/coverage-artifacts.tar
+        path: ${{runner.workspace}}/
     - name: Save artifacts
       uses: actions/download-artifact@v2
       with:
         name: test-artifacts
-        path: ${{runner.workspace}}/test-artifacts.tar
+        path: ${{runner.workspace}}/
     - name: Unpack artifacts
       working-directory: ${{runner.workspace}}
       run: |
@@ -144,7 +144,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: test-artifacts
-        path: ${{runner.workspace}}/test-artifacts.tar
+        path: ${{runner.workspace}}/
     - name: Unapack artifacts
       working-directory: ${{runner.workspace}}
       run: tar -xvf test-artifacts.tar
