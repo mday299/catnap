@@ -1,0 +1,85 @@
+repo_name: mday299/catnap
+report_id: 139d3c9480bcd3399090ba7e5ba992d7
+version: 0.1
+repo_type: Public
+timestamp: '2024-01-24T17:55:42+00:00'
+requested_by: cweidner3
+provider: github
+branch: develop
+detected_tools_count: 7
+tools:
+- name: C++
+  description: Has imperative, object-oriented and generic programming features, while
+    also providing the facilities for low level memory manipulation
+  website_url: http://www.cplusplus.com/
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/1049/cplusplus.png
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
+- name: CSS 3
+  description: The latest evolution of the Cascading Style Sheets language
+  website_url: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS3
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/6727/css.png
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
+- name: Python
+  description: A clear and powerful object-oriented programming language, comparable
+    to Perl, Ruby, Scheme, or Java.
+  website_url: https://www.python.org
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/993/pUBY5pVj.png
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
+- name: CMake
+  description: 'An open-source system that manages the build process '
+  website_url: http://www.cmake.org/
+  open_source: false
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Java Build Tools
+  image_url: https://img.stackshare.io/service/2424/0UlUI_y1_400x400.jpg
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
+- name: GitHub Actions
+  description: Automate your workflow from idea to production
+  website_url: https://github.com/features/actions
+  open_source: false
+  hosted_saas: true
+  category: Build, Test, Deploy
+  sub_category: Continuous Integration
+  image_url: https://img.stackshare.io/service/11563/actions.png
+  detection_source_url: https://github.com/mday299/catnap/blob/develop/.github/workflows/cmake.yml
+  detection_source: ".github/workflows/cmake.yml"
+  last_updated_by: Cora Weidner
+  last_updated_on: 2020-10-05 21:35:14.000000000 Z
+- name: Nix
+  description: 'A package manager for Linux and other Unix systems '
+  website_url: http://nixos.org/nix
+  license: LGPL-2.1
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Package Managers
+  image_url: https://img.stackshare.io/service/4348/ET9J1uY-_400x400.png
+  detection_source_url: https://github.com/mday299/catnap
+  detection_source: Repo Metadata
